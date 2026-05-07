@@ -283,16 +283,29 @@ function render(){
 async function fetchOrders(){
   try {
     const r = await fetch(`${API}?bumped=eq.false&order=created_at.asc`, {headers: HEADERS})
-    if(!r.ok) throw new Error()
+    if(!r.ok){
+      const errText = await r.text()
+      throw new Error(`${r.status}: ${errText}`)
+    }
     allOrders = await r.json()
     $('last-refresh').textContent = 'Updated '+now()
     $('ldot').classList.remove('err')
     $('live-lbl').textContent = 'Live'
     document.getElementById('loading').style.display='none'
     render()
-  } catch {
+  } catch(e) {
+    console.error('fetchOrders error:', e)
     $('ldot').classList.add('err')
-    $('live-lbl').textContent = 'Reconnecting…'
+    $('live-lbl').textContent = 'Error'
+    // Always hide spinner and show error state
+    const loading = document.getElementById('loading')
+    loading.innerHTML = `<div style="text-align:center;color:#e05252;padding:40px;max-width:500px;">
+      <div style="font-size:32px;margin-bottom:16px;">⚠</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:8px;">Could not connect to database</div>
+      <div style="font-size:13px;color:#666;margin-bottom:20px;word-break:break-all;">${e.message||'Unknown error'}</div>
+      <button onclick="location.reload()" style="padding:10px 24px;background:#e05252;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Retry</button>
+    </div>`
+    loading.style.display='flex'
   }
 }
 
